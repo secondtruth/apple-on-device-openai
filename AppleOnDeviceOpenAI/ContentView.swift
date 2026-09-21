@@ -18,8 +18,11 @@ struct ContentView: View {
                 }
             }
             .padding()
+            // The cap belongs on the content: on the scroll view it would pull the
+            // scroll bar in from the window's edge.
+            .frame(maxWidth: 600)
+            .frame(maxWidth: .infinity)
         }
-        .frame(maxWidth: 600)
         // Apple Intelligence is switched on in System Settings, so the state has
         // most likely changed when the user comes back from there.
         .onChange(of: scenePhase) { _, phase in
