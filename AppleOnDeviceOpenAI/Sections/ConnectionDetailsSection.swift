@@ -5,45 +5,51 @@ struct ConnectionDetailsSection: View {
     var viewModel: ServerViewModel
 
     var body: some View {
-        GroupBox("OpenAI API Integration") {
-            VStack(spacing: 16) {
+        Section("Connect a Client") {
+            CopyableValueRow(label: "Base URL", value: viewModel.baseURL, onCopy: viewModel.copyToClipboard)
+            CopyableValueRow(label: "Model", value: viewModel.modelName, onCopy: viewModel.copyToClipboard)
+            if viewModel.requiresAPIKey {
+                // Masked, but copyable: this is where the key is needed while the
+                // server runs and the settings below are locked.
                 CopyableValueRow(
-                    title: "Base URL", subtitle: "For OpenAI client libraries",
-                    value: viewModel.baseURL, onCopy: viewModel.copyToClipboard)
-                Divider()
-                CopyableValueRow(
-                    title: "Chat Completions", subtitle: "Direct API endpoint",
-                    value: viewModel.chatCompletionsURL, onCopy: viewModel.copyToClipboard)
-                Divider()
-                CopyableValueRow(
-                    title: "Model Name", subtitle: "Use this in your API requests",
-                    value: viewModel.modelName, onCopy: viewModel.copyToClipboard)
-                Divider()
-                if viewModel.requiresAPIKey {
-                    // Masked, but copyable: this is where the key is needed while the
-                    // server runs and the settings below are locked.
-                    CopyableValueRow(
-                        title: "API Key", subtitle: "Required; clients send it as their OpenAI API key",
-                        value: viewModel.apiKey, displayedValue: String(repeating: "•", count: 16),
-                        onCopy: viewModel.copyToClipboard)
-                } else {
-                    CopyableValueRow(
-                        title: "API Key", subtitle: "Not required",
-                        value: "not-needed", displayedValue: "any value works",
-                        onCopy: viewModel.copyToClipboard)
-                }
+                    label: "API key", value: viewModel.apiKey,
+                    displayedValue: String(repeating: "•", count: 12), onCopy: viewModel.copyToClipboard)
+            } else {
+                LabeledContent("API key", value: "Not required — any value works")
             }
-        }
 
-        GroupBox("Quick Start") {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Python Example:")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+            DisclosureRow(title: "Python example") {
                 CodeBlock(code: pythonExample, onCopy: viewModel.copyToClipboard)
+            }
+            DisclosureRow(title: "Endpoints") {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(Self.endpoints, id: \.path) { endpoint in
+                        HStack(spacing: 8) {
+                            Text(endpoint.method)
+                                .font(.caption.monospaced())
+                                .foregroundStyle(.secondary)
+                                .frame(width: 36, alignment: .leading)
+                            Text(endpoint.path)
+                                .font(.callout.monospaced())
+                                .textSelection(.enabled)
+                            Spacer()
+                            Text(endpoint.purpose)
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .padding(.vertical, 2)
             }
         }
     }
+
+    private static let endpoints: [(method: String, path: String, purpose: String)] = [
+        ("POST", "/v1/chat/completions", "Chat completions"),
+        ("GET", "/v1/models", "Models and availability"),
+        ("GET", "/status", "Model status"),
+        ("GET", "/health", "Liveness, no key needed"),
+    ]
 
     private var pythonExample: String {
         """
@@ -51,12 +57,12 @@ struct ConnectionDetailsSection: View {
 
         client = OpenAI(
             base_url="\(viewModel.baseURL)",
-            api_key="\(viewModel.requiresAPIKey ? "<your API key>" : "not-needed")"
+            api_key="\(viewModel.requiresAPIKey ? "<your API key>" : "not-needed")",
         )
 
         response = client.chat.completions.create(
             model="\(viewModel.modelName)",
-            messages=[{"role": "user", "content": "Hello!"}]
+            messages=[{"role": "user", "content": "Hello!"}],
         )
         """
     }

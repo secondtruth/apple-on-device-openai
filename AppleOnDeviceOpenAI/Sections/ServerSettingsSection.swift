@@ -5,77 +5,78 @@ struct ServerSettingsSection: View {
     @FocusState private var apiKeyIsFocused: Bool
 
     var body: some View {
-        GroupBox("Server Configuration") {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Picker("Bind Address", selection: $viewModel.host) {
-                        ForEach(viewModel.bindableAddresses, id: \.self) { address in
-                            Text(address == NetworkInterfaces.allInterfaces ? "All interfaces (0.0.0.0)" : address)
-                                .tag(address)
-                        }
-                    }
-                    .pickerStyle(.menu)
-
-                    Button("Rescan Network Interfaces", systemImage: "arrow.clockwise") {
-                        viewModel.refreshAddresses()
-                    }
-                    .labelStyle(.iconOnly)
-                    .help("Rescan network interfaces")
-                }
-
-                if viewModel.isReachableFromNetwork && !viewModel.requiresAPIKey {
-                    Notice(
-                        text: "This address makes the server reachable by other devices on your network, "
-                            + "and no API key is set. Set one below, or use it on networks you trust.",
-                        tint: .orange)
-                }
-
-                HStack {
-                    Text("Port:")
-                        .frame(width: 60, alignment: .leading)
-                    TextField(String(ServerSettings.defaults.port), text: $viewModel.portText)
-                        .textFieldStyle(.roundedBorder)
-                }
-                if viewModel.port == nil {
-                    Text("Enter a port between 1 and 65535.")
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                }
-
-                apiKeyField
-
-                Toggle("Start the server when the app launches", isOn: $viewModel.autoStart)
-
-                HStack {
-                    Spacer()
-                    Button("Reset to Defaults") { viewModel.resetToDefaults() }
-                        .buttonStyle(.borderless)
+        Section {
+            Picker("Bind address", selection: $viewModel.host) {
+                ForEach(viewModel.bindableAddresses, id: \.self) { address in
+                    Text(address == NetworkInterfaces.allInterfaces ? "All interfaces (0.0.0.0)" : address)
+                        .tag(address)
                 }
             }
-            // The running server keeps the configuration it started with.
-            .disabled(viewModel.isRunning || viewModel.isLoadingAPIKey)
-        }
-    }
+            if viewModel.isReachableFromNetwork && !viewModel.requiresAPIKey {
+                Notice(
+                    text: "Other devices on your network can reach this address, and no API key is set. "
+                        + "Set one below, or use it on networks you trust.",
+                    tint: .orange)
+            }
 
-    private var apiKeyField: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text("API Key:")
-                    .frame(width: 60, alignment: .leading)
-                SecureField("None — any client is accepted", text: $viewModel.apiKey)
+            // Bordered, and as wide as its content gets: in a grouped form a
+            // borderless field is indistinguishable from a read-only value.
+            LabeledContent("Port") {
+                TextField("Port", text: $viewModel.portText, prompt: Text(String(ServerSettings.defaults.port)))
+                    .labelsHidden()
                     .textFieldStyle(.roundedBorder)
-                    .focused($apiKeyIsFocused)
-                    .onSubmit { viewModel.persistAPIKey() }
-                Button("Generate") { viewModel.generateAPIKey() }
-                Button("Copy") { viewModel.copyToClipboard(viewModel.apiKey) }
-                    .disabled(!viewModel.requiresAPIKey)
+                    .multilineTextAlignment(.trailing)
+                    .monospacedDigit()
+                    .frame(width: 72)
             }
-            Text("Clients send it as their OpenAI API key. Stored in your login keychain; sent unencrypted over HTTP.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            if viewModel.port == nil {
+                Notice(text: "Enter a port between 1 and 65535.", tint: .red)
+            }
+
+            apiKeyRow
+
+            Toggle("Start server at launch", isOn: $viewModel.autoStart)
+        } header: {
+            Text("Server")
+        } footer: {
+            footer
         }
         .onChange(of: apiKeyIsFocused) { _, isFocused in
             if !isFocused { viewModel.persistAPIKey() }
+        }
+        // The running server keeps the configuration it started with.
+        .disabled(viewModel.isRunning || viewModel.isLoadingAPIKey)
+    }
+
+    private var apiKeyRow: some View {
+        LabeledContent {
+            HStack(spacing: 8) {
+                SecureField("API key", text: $viewModel.apiKey, prompt: Text("None"))
+                    .labelsHidden()
+                    .textFieldStyle(.roundedBorder)
+                    .frame(minWidth: 120, maxWidth: 200)
+                    .focused($apiKeyIsFocused)
+                    .onSubmit { viewModel.persistAPIKey() }
+                Button("Generate") { viewModel.generateAPIKey() }
+                CopyButton(text: viewModel.apiKey, onCopy: viewModel.copyToClipboard)
+                    .disabled(!viewModel.requiresAPIKey)
+            }
+        } label: {
+            Text("API key")
+            Text("Optional")
+        }
+    }
+
+    private var footer: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(
+                viewModel.isRunning
+                    ? "Stop the server to change these settings."
+                    : "Clients send the API key as their OpenAI key. It is kept in your login keychain and "
+                        + "travels unencrypted over HTTP.")
+            Spacer()
+            Button("Reset to Defaults") { viewModel.resetToDefaults() }
+                .buttonStyle(.link)
         }
     }
 }

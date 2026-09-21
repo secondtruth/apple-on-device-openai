@@ -1,23 +1,25 @@
 import SwiftUI
 
-/// A tinted box for a condition the user should act on.
-struct Notice: View {
+/// A form row for a condition the user should act on.
+struct Notice<Tint: ShapeStyle>: View {
     let text: String
-    let tint: Color
+    let tint: Tint
 
     var body: some View {
-        Label(text, systemImage: "exclamationmark.triangle.fill")
-            .font(.caption)
-            .foregroundStyle(tint)
-            .padding(8)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(tint.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
+        Label {
+            Text(text)
+                .foregroundStyle(.primary)
+        } icon: {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(tint)
+        }
+        .font(.callout)
     }
 }
 
 struct StatusDot: View {
     let color: Color
-    let size: CGFloat
+    var size: CGFloat = 8
 
     var body: some View {
         Circle()

@@ -5,19 +5,17 @@ struct CodeBlock: View {
     let onCopy: (String) -> Void
 
     var body: some View {
-        VStack(alignment: .trailing, spacing: 8) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                Text(code)
-                    .font(.system(.caption, design: .monospaced))
-                    .textSelection(.enabled)
-                    .padding()
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.gray.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
-
-            Button("Copy Code") { onCopy(code) }
-                .buttonStyle(.borderless)
-                .font(.caption)
+        ScrollView(.horizontal, showsIndicators: false) {
+            Text(code)
+                .font(.caption.monospaced())
+                .textSelection(.enabled)
+                .padding(10)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 6))
+        .overlay(alignment: .topTrailing) {
+            CopyButton(text: code, onCopy: onCopy)
+                .padding(6)
         }
     }
 }

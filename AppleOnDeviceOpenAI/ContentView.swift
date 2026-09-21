@@ -1,47 +1,27 @@
 import SwiftUI
 
+/// The server window, laid out as a grouped form like System Settings: the
+/// platform then supplies the label column, the row separators and the
+/// disabled states that a hand-built card has to imitate.
 struct ContentView: View {
     @Bindable var viewModel: ServerViewModel
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                header
-                ServerStatusSection(viewModel: viewModel)
-                if viewModel.isRunning {
-                    ConnectionDetailsSection(viewModel: viewModel)
-                }
-                ServerSettingsSection(viewModel: viewModel)
-                if viewModel.isRunning {
-                    EndpointsSection()
-                }
+        Form {
+            ServerStatusSection(viewModel: viewModel)
+            if viewModel.isRunning {
+                ConnectionDetailsSection(viewModel: viewModel)
             }
-            .padding()
-            // The cap belongs on the content: on the scroll view it would pull the
-            // scroll bar in from the window's edge.
-            .frame(maxWidth: 600)
-            .frame(maxWidth: .infinity)
+            ServerSettingsSection(viewModel: viewModel)
         }
-        // Apple Intelligence is switched on in System Settings, so the state has
-        // most likely changed when the user comes back from there.
+        .formStyle(.grouped)
+        .frame(minWidth: 460, idealWidth: 520, maxWidth: 720, minHeight: 360)
+        // Apple Intelligence is switched on in System Settings and networks
+        // change while the app is in the background, so both are most likely
+        // stale when the user comes back.
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { viewModel.refreshAvailability() }
-        }
-    }
-
-    private var header: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "brain.head.profile")
-                .font(.system(size: 48))
-                .foregroundStyle(.tint)
-            Text("Apple On-Device OpenAI API")
-                .font(.title)
-                .fontWeight(.semibold)
-            Text("Local Apple Intelligence through OpenAI-compatible endpoints")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+            if phase == .active { viewModel.refreshEnvironment() }
         }
     }
 }

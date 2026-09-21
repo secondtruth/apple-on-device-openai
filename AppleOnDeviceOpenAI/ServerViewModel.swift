@@ -75,10 +75,6 @@ final class ServerViewModel {
         port.map { ServerSettings(host: host, port: $0, autoStart: autoStart, logLevel: logLevel) }
     }
 
-    private func persist() {
-        settings?.save()
-    }
-
     // MARK: Lifecycle
 
     /// Runs once at launch: the key has to be read before an auto-start uses it.
@@ -89,6 +85,10 @@ final class ServerViewModel {
         if autoStart && !isRunning {
             await start()
         }
+    }
+
+    private func persist() {
+        settings?.save()
     }
 
     func generateAPIKey() {
@@ -135,6 +135,20 @@ final class ServerViewModel {
 
     func refreshAvailability() {
         availability = OnDeviceModel.general.availability
+    }
+
+    /// Everything the app reads from the system rather than from the user.
+    func refreshEnvironment() {
+        refreshAvailability()
+        if !isRunning { refreshAddresses() }
+    }
+
+    /// Where the server listens, in words for the status row.
+    var listeningDescription: String {
+        guard let activeConfiguration else { return "Not accepting requests" }
+        let host = activeConfiguration.host == NetworkInterfaces.allInterfaces
+            ? "all interfaces" : activeConfiguration.host
+        return "Listening on \(host), port \(activeConfiguration.port)"
     }
 
     // MARK: What clients are told

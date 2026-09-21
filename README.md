@@ -4,8 +4,6 @@ A macOS app that serves Apple's on-device Foundation Models through an OpenAI-co
 
 This is a fork of [gety-ai/apple-on-device-openai](https://github.com/gety-ai/apple-on-device-openai), updated for macOS 27 and extended with tool calling, structured output and OpenAI-shaped errors.
 
-<img src="assets/server.png" alt="App Screenshot" width="600">
-
 ## Requirements
 
 - macOS 27 on a Mac with Apple silicon

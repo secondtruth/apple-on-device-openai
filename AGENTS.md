@@ -39,7 +39,7 @@ AppleOnDeviceOpenAI/       App target: window, settings, server lifecycle
   ServerViewModel.swift    Observable state; owns the OnDeviceServer actor
   ServerSettings.swift     UserDefaults-backed settings, which double as launch arguments
   APIKeyStore.swift        The optional API key, in the login keychain
-  Sections/, Components/   SwiftUI views
+  Sections/, Components/   SwiftUI views: one grouped Form, one Section per file
 OnDeviceServer/            Local Swift package, Swift 6 language mode
   Sources/OnDeviceServer/
     OnDeviceServer.swift   Public facade: start/stop (actor)
@@ -70,6 +70,17 @@ Ad-hoc signed builds get a new code identity with every rebuild, so macOS prompt
 Foundation Models executes tools inside a session turn; OpenAI clients execute them between two requests. `ClientExecutedTool.call` therefore throws `Handoff`. The session runs with `transcriptErrorHandlingPolicy = .preserveTranscript`, so the `.toolCalls` entry survives the failed turn and `ChatGeneration` reads the calls from `session.transcript`. The follow-up request is rebuilt as a transcript ending in `.toolOutput` entries and continued with an empty prompt, because the framework has no way to generate without one. The server is stateless.
 
 These mechanics were established by probing the SDK, not from documentation: `GenerationSchema`'s `Codable` conformance only reads the framework's own dialect (it requires `x-order`), which is why `JSONSchemaConverter` goes through `DynamicGenerationSchema`. The executor-level API (`LanguageModelExecutorGenerationChannel`) would deliver raw tool-call events, but its `Event` type has no public accessors, so a consumer cannot read them.
+
+## UI
+
+The window is a product UI, not a marketing surface; it follows the `product-ui-design` skill. Its reference is System Settings: one grouped `Form`, native controls, the system font, the accent colour only on the primary action. Rules that came out of looking at the real window:
+
+- Text inputs get a visible border and a width that fits their content. A borderless field in a grouped form reads as a static value.
+- Conditions the user must act on are `Notice` rows inside the section they concern.
+- Values meant to be pasted elsewhere use `CopyableValueRow` (monospace, one step down, with a confirming copy button). Secrets are masked but copyable.
+- An absence is named ("Not required — any value works"), not left blank.
+- Use `DisclosureRow`, not `DisclosureGroup`: inside a grouped form the native group ignored the accessibility press action.
+- Verify visually with the computer-use `app_screenshot` tools; `screencapture` from the agent shell has no screen-recording permission.
 
 ## Conventions
 
