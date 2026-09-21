@@ -25,6 +25,9 @@ extension APIError {
     func response() throws -> Response {
         let response = Response(status: status)
         try response.content.encode(envelope, as: .json)
+        if status == .unauthorized {
+            response.headers.replaceOrAdd(name: .wwwAuthenticate, value: "Bearer")
+        }
         if let retryAfter {
             let seconds = max(1, Int(retryAfter.timeIntervalSinceNow.rounded(.up)))
             response.headers.replaceOrAdd(name: .retryAfter, value: String(seconds))

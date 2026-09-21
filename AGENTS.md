@@ -38,6 +38,7 @@ Launch the app with `open`, not by running the binary: the rate limit applies to
 AppleOnDeviceOpenAI/       App target: window, settings, server lifecycle
   ServerViewModel.swift    Observable state; owns the OnDeviceServer actor
   ServerSettings.swift     UserDefaults-backed settings, which double as launch arguments
+  APIKeyStore.swift        The optional API key, in the login keychain
   Sections/, Components/   SwiftUI views
 OnDeviceServer/            Local Swift package, Swift 6 language mode
   Sources/OnDeviceServer/
@@ -45,11 +46,17 @@ OnDeviceServer/            Local Swift package, Swift 6 language mode
     OpenAI/                Wire types; APIError is the OpenAI error envelope
     Generation/            Conversation (messages -> Transcript), ChatGeneration (the session),
                            ClientExecutedTool, JSONSchemaConverter, OnDeviceModel, error mapping
-    HTTP/                  Routes, ChatCompletionsHandler, SSE writer, APIErrorMiddleware
+    HTTP/                  Routes, ChatCompletionsHandler, SSE writer, APIErrorMiddleware, APIKeyMiddleware
   Tests/OnDeviceServerTests/
 ```
 
 The Xcode project uses file-system-synchronized groups: new files under `AppleOnDeviceOpenAI/` need no project-file edit. The app target builds with `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` and member-import visibility, so it must `import OnDeviceServer` in every file that touches the package's types, and it cannot use swift-log types — the package exposes its own `ServerConfiguration.LogLevel`.
+
+## API key and the keychain
+
+The optional API key lives in the login keychain (`APIKeyStore`), never in `UserDefaults` or a launch argument. `ServerViewModel.prepare()` reads it off the main actor before an auto-start, and the server does not start while that read is pending: starting without the key would fail open.
+
+Ad-hoc signed builds get a new code identity with every rebuild, so macOS prompts for keychain access once per rebuild when a key is stored. During development, remove the item to avoid the prompt: `security delete-generic-password -s de.secondtruth.AppleOnDeviceOpenAI -a api-key`.
 
 ## How a completion runs
 

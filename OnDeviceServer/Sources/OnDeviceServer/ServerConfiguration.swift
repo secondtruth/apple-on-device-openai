@@ -19,16 +19,19 @@ public struct ServerConfiguration: Sendable, Equatable {
     public var host: String
     public var port: Int
     public var logLevel: LogLevel
+    /// When set, every endpoint but `/health` requires `Authorization: Bearer <key>`.
+    public var apiKey: String?
     /// Reported by `GET /status`; the package cannot see the app bundle's version.
     public var serverVersion: String
 
     public init(
         host: String = defaultHost, port: Int = defaultPort,
-        logLevel: LogLevel = .info, serverVersion: String = "dev"
+        logLevel: LogLevel = .info, apiKey: String? = nil, serverVersion: String = "dev"
     ) {
         self.host = host
         self.port = port
         self.logLevel = logLevel
+        self.apiKey = apiKey
         self.serverVersion = serverVersion
     }
 

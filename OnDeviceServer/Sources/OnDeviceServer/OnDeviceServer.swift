@@ -27,11 +27,7 @@ public actor OnDeviceServer {
         app.http.server.configuration.port = configuration.port
         app.http.server.configuration.serverName = "apple-on-device-openai/\(configuration.serverVersion)"
 
-        // Replaces the defaults: Vapor's error middleware answers in a format no
-        // OpenAI client understands.
-        app.middleware = Middlewares()
-        app.middleware.use(APIErrorMiddleware())
-        registerRoutes(on: app, serverVersion: configuration.serverVersion)
+        Self.configure(app, with: configuration)
 
         do {
             try await app.startup()
@@ -44,7 +40,17 @@ public actor OnDeviceServer {
         app.logger.notice("server started", metadata: [
             "host": "\(configuration.host)", "port": "\(configuration.port)",
             "version": "\(configuration.serverVersion)",
+            "api_key_required": "\(configuration.apiKey?.isEmpty == false)",
         ])
+    }
+
+    /// Everything about the application that does not involve a socket.
+    static func configure(_ app: Application, with configuration: ServerConfiguration) {
+        // Replaces the defaults: Vapor's error middleware answers in a format no
+        // OpenAI client understands.
+        app.middleware = Middlewares()
+        app.middleware.use(APIErrorMiddleware())
+        registerRoutes(on: app, configuration: configuration)
     }
 
     /// Stops accepting connections and lets running requests finish.

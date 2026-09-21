@@ -7,7 +7,7 @@ struct AppleOnDeviceOpenAIApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView(viewModel: viewModel)
-                .task { await viewModel.startIfConfigured() }
+                .task { await viewModel.prepare() }
         }
     }
 }

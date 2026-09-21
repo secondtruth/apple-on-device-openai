@@ -33,6 +33,17 @@ struct APIError: Error, Sendable, Equatable {
             param: "model", code: "model_not_found")
     }
 
+    /// OpenAI answers a missing or wrong key as an `invalid_request_error` with
+    /// status 401; its client libraries map the status to their authentication error.
+    static func invalidAPIKey(missing: Bool) -> APIError {
+        APIError(
+            status: .unauthorized, kind: .invalidRequest,
+            message: missing
+                ? "This server requires an API key. Send it as 'Authorization: Bearer <key>'."
+                : "Incorrect API key provided.",
+            code: missing ? nil : "invalid_api_key")
+    }
+
     static func internalError(_ message: String) -> APIError {
         APIError(status: .internalServerError, kind: .api, message: message, code: "internal_error")
     }

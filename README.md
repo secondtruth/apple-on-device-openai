@@ -49,15 +49,24 @@ open -a AppleOnDeviceOpenAI --args -port 11600 -autoStart YES -logLevel debug
 | `autoStart` | `NO` | Start the server when the app launches. |
 | `logLevel` | `info` | `trace`, `debug`, `info`, `notice`, `warning`, `error` or `critical`. |
 
-Binding to anything but `127.0.0.1` makes the server reachable from the network. It has no authentication; use that on networks you trust.
-
 Clients need three values:
 
 | | |
 | --- | --- |
 | Base URL | `http://127.0.0.1:11535/v1` |
 | Model | `apple-on-device` |
-| API key | any value; it is not checked |
+| API key | any value, unless you set one (below) |
+
+### API key
+
+Binding to anything but `127.0.0.1` makes the server reachable from the network. Set an API key in the window (**Generate** creates one) and every endpoint except `/health` requires it as `Authorization: Bearer <key>`, which is where OpenAI clients put their key. A missing or wrong key answers `401` in OpenAI's error envelope. With no key set, any client is accepted.
+
+The key is stored in the login keychain, not with the other settings, and it is deliberately not a launch argument: those show up in `ps`. While the server runs, copy it from the **OpenAI API Integration** section.
+
+Two limits:
+
+- The server speaks plain HTTP, so the key crosses the network unencrypted. It keeps casual clients out; it does not protect against someone who can read the traffic. For that, put a TLS-terminating reverse proxy in front.
+- A locally built app is signed ad hoc, and macOS ties keychain access to the code signature. After every rebuild it asks once for permission to read the key. Until that is answered the server does not start, rather than starting without the key. Builds signed with a development team do not ask again.
 
 ## Endpoints
 
@@ -195,6 +204,7 @@ Errors use OpenAI's envelope and matching HTTP statuses, so client libraries rai
 | 400 | `unsupported_parameter`, `unsupported_schema`, `unsupported_content_type` | The model cannot do what was asked. |
 | 400 | `context_length_exceeded` | The conversation does not fit the context window; the message states both token counts. |
 | 400 | `content_policy_violation` | Blocked by the model's guardrails, or refused. |
+| 401 | `invalid_api_key`, or none when the key is missing | An API key is set and the request does not carry it. |
 | 404 | `model_not_found`, `unknown_url` | |
 | 429 | `rate_limit_exceeded` | With `Retry-After` when the system reports a reset time. |
 | 503 | `apple_intelligence_disabled`, `model_downloading`, `device_not_eligible` | The model is unavailable. |

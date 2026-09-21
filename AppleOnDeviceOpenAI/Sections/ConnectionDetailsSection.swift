@@ -18,6 +18,20 @@ struct ConnectionDetailsSection: View {
                 CopyableValueRow(
                     title: "Model Name", subtitle: "Use this in your API requests",
                     value: viewModel.modelName, onCopy: viewModel.copyToClipboard)
+                Divider()
+                if viewModel.requiresAPIKey {
+                    // Masked, but copyable: this is where the key is needed while the
+                    // server runs and the settings below are locked.
+                    CopyableValueRow(
+                        title: "API Key", subtitle: "Required; clients send it as their OpenAI API key",
+                        value: viewModel.apiKey, displayedValue: String(repeating: "•", count: 16),
+                        onCopy: viewModel.copyToClipboard)
+                } else {
+                    CopyableValueRow(
+                        title: "API Key", subtitle: "Not required",
+                        value: "not-needed", displayedValue: "any value works",
+                        onCopy: viewModel.copyToClipboard)
+                }
             }
         }
 
@@ -37,7 +51,7 @@ struct ConnectionDetailsSection: View {
 
         client = OpenAI(
             base_url="\(viewModel.baseURL)",
-            api_key="not-needed"
+            api_key="\(viewModel.requiresAPIKey ? "<your API key>" : "not-needed")"
         )
 
         response = client.chat.completions.create(

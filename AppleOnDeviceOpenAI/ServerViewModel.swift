@@ -17,6 +17,12 @@ final class ServerViewModel {
     var host: String { didSet { persist() } }
     var portText: String { didSet { persist() } }
     var autoStart: Bool { didSet { persist() } }
+    /// Empty means the server accepts any client. Persisted by `persistAPIKey()`,
+    /// not on every keystroke: each write is a keychain transaction.
+    var apiKey = ""
+    /// True until the keychain has answered. The server must not start before
+    /// that: it would run without the key it is supposed to require.
+    private(set) var isLoadingAPIKey = true
 
     let modelName = OnDeviceModel.general.id
 
@@ -46,12 +52,16 @@ final class ServerViewModel {
 
     var isReachableFromNetwork: Bool { host != NetworkInterfaces.loopback }
 
-    var canStart: Bool { port != nil && !isTransitioning }
+    var requiresAPIKey: Bool { !apiKey.isEmpty }
+
+    var canStart: Bool { port != nil && !isTransitioning && !isLoadingAPIKey }
 
     func resetToDefaults() {
         host = ServerSettings.defaults.host
         portText = String(ServerSettings.defaults.port)
         autoStart = ServerSettings.defaults.autoStart
+        apiKey = ""
+        persistAPIKey()
     }
 
     func refreshAddresses() {
@@ -71,9 +81,26 @@ final class ServerViewModel {
 
     // MARK: Lifecycle
 
-    func startIfConfigured() async {
+    /// Runs once at launch: the key has to be read before an auto-start uses it.
+    func prepare() async {
+        // Off the main actor, because the keychain may stop to ask the user.
+        apiKey = await Task.detached { APIKeyStore.load() }.value ?? ""
+        isLoadingAPIKey = false
         if autoStart && !isRunning {
             await start()
+        }
+    }
+
+    func generateAPIKey() {
+        apiKey = APIKeyStore.generate()
+        persistAPIKey()
+    }
+
+    func persistAPIKey() {
+        do {
+            try APIKeyStore.save(apiKey)
+        } catch {
+            lastError = error.localizedDescription
         }
     }
 
@@ -81,14 +108,16 @@ final class ServerViewModel {
     // a 503 that says what to do, instead of a refused connection, and requests
     // succeed by themselves once a download finishes.
     func start() async {
-        guard let settings, !isRunning else { return }
+        guard let settings, !isRunning, !isLoadingAPIKey else { return }
         isTransitioning = true
         defer { isTransitioning = false }
 
         refreshAvailability()
+        persistAPIKey()
+        let configuration = settings.configuration(apiKey: apiKey)
         do {
-            try await server.start(settings.configuration)
-            activeConfiguration = settings.configuration
+            try await server.start(configuration)
+            activeConfiguration = configuration
             isRunning = true
             lastError = nil
         } catch {
@@ -111,7 +140,7 @@ final class ServerViewModel {
     // MARK: What clients are told
 
     var baseURL: String {
-        guard let activeConfiguration else { return settings?.configuration.baseURL() ?? "" }
+        guard let activeConfiguration else { return settings?.configuration(apiKey: "").baseURL() ?? "" }
         // 0.0.0.0 is where the server listens, not an address a client can dial.
         let advertised = activeConfiguration.host == NetworkInterfaces.allInterfaces
             ? NetworkInterfaces.primaryLANAddress() ?? NetworkInterfaces.loopback

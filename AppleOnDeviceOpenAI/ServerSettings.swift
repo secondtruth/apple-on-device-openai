@@ -44,8 +44,11 @@ struct ServerSettings: Equatable {
         store.set(logLevel.rawValue, forKey: Key.logLevel)
     }
 
-    var configuration: ServerConfiguration {
+    /// The API key is not a member: it lives in the keychain, see `APIKeyStore`.
+    func configuration(apiKey: String) -> ServerConfiguration {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-        return ServerConfiguration(host: host, port: port, logLevel: logLevel, serverVersion: version ?? "dev")
+        return ServerConfiguration(
+            host: host, port: port, logLevel: logLevel,
+            apiKey: apiKey.isEmpty ? nil : apiKey, serverVersion: version ?? "dev")
     }
 }

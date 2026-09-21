@@ -18,7 +18,7 @@ let package = Package(
         ),
         .testTarget(
             name: "OnDeviceServerTests",
-            dependencies: ["OnDeviceServer"]
+            dependencies: ["OnDeviceServer", .product(name: "VaporTesting", package: "vapor")]
         ),
     ]
 )

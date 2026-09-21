@@ -12,6 +12,12 @@ struct ServerStatusSection: View {
                 if let explanation = viewModel.availability.explanation {
                     Notice(text: explanation, tint: .orange)
                 }
+                if viewModel.isLoadingAPIKey {
+                    Notice(
+                        text: "Waiting for the keychain to release the API key. macOS may be asking for "
+                            + "permission in a separate dialog.",
+                        tint: .secondary)
+                }
                 if let error = viewModel.lastError {
                     Notice(text: error, tint: .red)
                 }

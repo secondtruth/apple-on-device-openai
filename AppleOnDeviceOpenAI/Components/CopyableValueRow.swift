@@ -5,6 +5,8 @@ struct CopyableValueRow: View {
     let title: String
     let subtitle: String
     let value: String
+    /// What to show instead of the value, for secrets.
+    var displayedValue: String?
     let onCopy: (String) -> Void
 
     var body: some View {
@@ -19,7 +21,7 @@ struct CopyableValueRow: View {
             }
             Spacer()
             HStack {
-                Text(value)
+                Text(displayedValue ?? value)
                     .font(.system(.body, design: .monospaced))
                     .textSelection(.enabled)
                     .lineLimit(1)

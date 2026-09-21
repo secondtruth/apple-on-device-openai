@@ -1,11 +1,18 @@
 import Vapor
 
-func registerRoutes(on app: Application, serverVersion: String) {
+func registerRoutes(on app: Application, configuration: ServerConfiguration) {
+    // Open even with an API key set: a liveness probe carries no credentials.
     app.get("health") { _ in HTTPStatus.ok }
 
-    app.get("status") { _ in ServerStatus(serverVersion: serverVersion) }
+    var api: any RoutesBuilder = app
+    if let apiKey = configuration.apiKey, !apiKey.isEmpty {
+        api = app.grouped(APIKeyMiddleware(expectedKey: apiKey))
+    }
 
-    let v1 = app.grouped("v1")
+    let serverVersion = configuration.serverVersion
+    api.get("status") { _ in ServerStatus(serverVersion: serverVersion) }
+
+    let v1 = api.grouped("v1")
 
     v1.get("models") { _ in
         ModelList(data: OnDeviceModel.catalog.map(\.modelObject))
