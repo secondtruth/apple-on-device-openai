@@ -65,9 +65,9 @@ public actor OnDeviceServer {
         try? await app.asyncShutdown()
     }
 
-    // The host is a GUI app, and macOS naps a GUI app nobody is looking at: once
-    // the window is covered, the display sleeps or the screen locks, its threads
-    // drop to the lowest priority and requests stall for minutes. A server has no
+    // The host is a GUI app, and macOS naps a GUI app nobody is using: after a
+    // few idle minutes in the background its threads drop to the lowest
+    // priority and requests stall for minutes. A server has no
     // such idle state. The assertion lifts App Nap while it runs, but still lets
     // the Mac go to sleep: whether it stays awake is the owner's power policy.
     private static func beginServingActivity() -> any NSObjectProtocol {

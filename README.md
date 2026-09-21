@@ -227,9 +227,9 @@ Apple rate-limits Foundation Models for processes without a user interface: acco
 
 ### Running in the background
 
-macOS naps a GUI app nobody is looking at. Without countermeasures, once the display sleeps or the screen locks, the app's threads fall to the scheduler's lowest priority and the server stalls: in a side-by-side test after eleven idle minutes, a one-word completion timed out at 90 s and `/health` stopped answering.
+macOS naps a GUI app nobody is using. Without countermeasures, after a few idle minutes in the background the app's threads fall to the scheduler's lowest priority and the server stalls: in a side-by-side test after eleven idle minutes, a one-word completion timed out at 90 s and `/health` stopped answering.
 
-The server therefore holds an activity assertion while it runs, which exempts the app from App Nap. In the same test it answered in 0.6 s. The window may be covered, the display may sleep, the screen may be locked.
+The server therefore holds an activity assertion while it runs, which exempts the app from App Nap. In the same test it answered in 0.6 s. The window does not have to be in front.
 
 The assertion does not keep the Mac awake. When the Mac sleeps, the server is unreachable; to serve around the clock, prevent system sleep in System Settings or with `caffeinate -s`.
 
