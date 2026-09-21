@@ -37,11 +37,25 @@ struct ServerSettings: Equatable {
             logLevel: store.string(forKey: Key.logLevel).flatMap(ServerConfiguration.LogLevel.init(rawValue:)) ?? defaults.logLevel)
     }
 
-    func save(to store: UserDefaults = .standard) {
+    // Each setting is written on its own. Writing them together would also
+    // store the values a launch argument supplied, and turn an override meant
+    // for one launch into the new default.
+    static func persist(host: String, to store: UserDefaults = .standard) {
         store.set(host, forKey: Key.host)
+    }
+
+    static func persist(port: Int, to store: UserDefaults = .standard) {
         store.set(port, forKey: Key.port)
+    }
+
+    static func persist(autoStart: Bool, to store: UserDefaults = .standard) {
         store.set(autoStart, forKey: Key.autoStart)
-        store.set(logLevel.rawValue, forKey: Key.logLevel)
+    }
+
+    static func removeAll(from store: UserDefaults = .standard) {
+        for key in [Key.host, Key.port, Key.autoStart, Key.logLevel] {
+            store.removeObject(forKey: key)
+        }
     }
 
     /// The API key is not a member: it lives in the keychain, see `APIKeyStore`.

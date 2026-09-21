@@ -14,9 +14,11 @@ final class ServerViewModel {
     /// The configuration of the running server; the settings may have moved on since.
     private(set) var activeConfiguration: ServerConfiguration?
 
-    var host: String { didSet { persist() } }
-    var portText: String { didSet { persist() } }
-    var autoStart: Bool { didSet { persist() } }
+    var host: String { didSet { ServerSettings.persist(host: host) } }
+    /// Persisted by `persistPort()` once editing ends: while typing, a prefix of
+    /// the intended number is a valid port too.
+    var portText: String
+    var autoStart: Bool { didSet { ServerSettings.persist(autoStart: autoStart) } }
     /// Empty means the server accepts any client. Persisted by `persistAPIKey()`,
     /// not on every keystroke: each write is a keychain transaction.
     var apiKey = ""
@@ -60,6 +62,7 @@ final class ServerViewModel {
         host = ServerSettings.defaults.host
         portText = String(ServerSettings.defaults.port)
         autoStart = ServerSettings.defaults.autoStart
+        ServerSettings.removeAll()
         apiKey = ""
         persistAPIKey()
     }
@@ -87,8 +90,8 @@ final class ServerViewModel {
         }
     }
 
-    private func persist() {
-        settings?.save()
+    func persistPort() {
+        if let port { ServerSettings.persist(port: port) }
     }
 
     func generateAPIKey() {
@@ -113,6 +116,7 @@ final class ServerViewModel {
         defer { isTransitioning = false }
 
         refreshAvailability()
+        persistPort()
         persistAPIKey()
         let configuration = settings.configuration(apiKey: apiKey)
         do {

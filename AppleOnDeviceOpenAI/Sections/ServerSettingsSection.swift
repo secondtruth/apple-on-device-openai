@@ -2,7 +2,11 @@ import SwiftUI
 
 struct ServerSettingsSection: View {
     @Bindable var viewModel: ServerViewModel
-    @FocusState private var apiKeyIsFocused: Bool
+    @FocusState private var focusedField: Field?
+
+    private enum Field {
+        case port, apiKey
+    }
 
     var body: some View {
         Section {
@@ -28,6 +32,8 @@ struct ServerSettingsSection: View {
                     .multilineTextAlignment(.trailing)
                     .monospacedDigit()
                     .frame(width: 72)
+                    .focused($focusedField, equals: .port)
+                    .onSubmit { viewModel.persistPort() }
             }
             if viewModel.port == nil {
                 Notice(text: "Enter a port between 1 and 65535.", tint: .red)
@@ -41,8 +47,13 @@ struct ServerSettingsSection: View {
         } footer: {
             footer
         }
-        .onChange(of: apiKeyIsFocused) { _, isFocused in
-            if !isFocused { viewModel.persistAPIKey() }
+        // Text fields are saved when editing ends, not on every keystroke.
+        .onChange(of: focusedField) { previous, _ in
+            switch previous {
+            case .port: viewModel.persistPort()
+            case .apiKey: viewModel.persistAPIKey()
+            case nil: break
+            }
         }
         // The running server keeps the configuration it started with.
         .disabled(viewModel.isRunning || viewModel.isLoadingAPIKey)
@@ -55,7 +66,7 @@ struct ServerSettingsSection: View {
                     .labelsHidden()
                     .textFieldStyle(.roundedBorder)
                     .frame(minWidth: 120, maxWidth: 200)
-                    .focused($apiKeyIsFocused)
+                    .focused($focusedField, equals: .apiKey)
                     .onSubmit { viewModel.persistAPIKey() }
                 Button("Generate") { viewModel.generateAPIKey() }
                 CopyButton(text: viewModel.apiKey, onCopy: viewModel.copyToClipboard)
