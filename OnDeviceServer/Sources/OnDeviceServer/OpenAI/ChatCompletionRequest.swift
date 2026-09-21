@@ -21,6 +21,7 @@ struct ChatCompletionRequest: Content {
     var tools: [ToolDefinition]?
     var toolChoice: ToolChoice?
     var parallelToolCalls: Bool?
+    var responseFormat: ResponseFormat?
 
     enum CodingKeys: String, CodingKey {
         case model, messages, temperature, seed, n, stop, stream, tools
@@ -30,6 +31,7 @@ struct ChatCompletionRequest: Content {
         case streamOptions = "stream_options"
         case toolChoice = "tool_choice"
         case parallelToolCalls = "parallel_tool_calls"
+        case responseFormat = "response_format"
     }
 
     /// `max_completion_tokens` superseded `max_tokens`; clients send either.
@@ -58,5 +60,21 @@ struct StopSequences: Codable, Sendable {
 
     func encode(to encoder: Encoder) throws {
         try sequences.encode(to: encoder)
+    }
+}
+
+struct ResponseFormat: Codable, Sendable {
+    var type: String
+    var jsonSchema: JSONSchemaFormat?
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case jsonSchema = "json_schema"
+    }
+
+    struct JSONSchemaFormat: Codable, Sendable {
+        var name: String
+        var description: String?
+        var schema: JSONValue?
     }
 }

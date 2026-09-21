@@ -34,6 +34,7 @@ import Testing
         (#""tools":[{"type":"retrieval","function":{"name":"x"}}]"#, "tools[0].type", 400),
         (#""tools":[{"type":"function","function":{"name":"x","parameters":{"type":"object","properties":{"a":{"not":{}}}}}}]"#,
             "tools[0].function.parameters", 400),
+        (#""response_format":{"type":"json_object"}"#, "response_format.type", 400),
     ])
     func rejectsWhatTheModelCannotHonour(fields: String, param: String, status: Int) throws {
         let decoded = try request(fields)

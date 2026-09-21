@@ -1,8 +1,8 @@
 import Foundation
 import FoundationModels
 
-/// Converts a JSON Schema, as OpenAI clients send it for tool parameters, into
-/// a Foundation Models `GenerationSchema`.
+/// Converts a JSON Schema, as OpenAI clients send it for tool parameters and
+/// structured output, into a Foundation Models `GenerationSchema`.
 ///
 /// `GenerationSchema` is Codable, but only for the dialect the framework emits
 /// itself (it requires `x-order`), so the conversion goes through

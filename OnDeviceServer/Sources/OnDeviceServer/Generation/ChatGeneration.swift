@@ -25,6 +25,7 @@ struct ChatGeneration: Sendable {
     private let conversation: Conversation
     private let tools: [ClientExecutedTool]
     private let options: GenerationOptions
+    private let outputSchema: GenerationSchema?
     private let responseTokenLimit: Int?
     private let allowsParallelToolCalls: Bool
 
@@ -39,6 +40,7 @@ struct ChatGeneration: Sendable {
         tools = enabled
         conversation = try Conversation(messages: request.messages, tools: enabled)
         options = try Self.options(of: request, toolCallingMode: callingMode)
+        outputSchema = try Self.outputSchema(of: request.responseFormat)
         responseTokenLimit = request.responseTokenLimit
         allowsParallelToolCalls = request.parallelToolCalls ?? true
     }
@@ -69,11 +71,16 @@ struct ChatGeneration: Sendable {
 
         var content = ""
         do {
-            for try await snapshot in textStream(from: session) {
-                if snapshot.content.hasPrefix(content) {
-                    continuation.yield(.textDelta(String(snapshot.content.dropFirst(content.count))))
+            if let outputSchema {
+                content = try await structuredResponse(from: session, schema: outputSchema)
+                continuation.yield(.textDelta(content))
+            } else {
+                for try await snapshot in textStream(from: session) {
+                    if snapshot.content.hasPrefix(content) {
+                        continuation.yield(.textDelta(String(snapshot.content.dropFirst(content.count))))
+                    }
+                    content = snapshot.content
                 }
-                content = snapshot.content
             }
         } catch let error as LanguageModelSession.ToolCallError where error.underlyingError is ClientExecutedTool.Handoff {
             continuation.yield(.completed(completion(of: session, content: content, toolCalls: requestedToolCalls(in: session))))
@@ -91,6 +98,18 @@ struct ChatGeneration: Sendable {
         } else {
             session.streamResponse(options: options) {}
         }
+    }
+
+    // Partial structured output is not valid JSON and its snapshots are not
+    // prefixes of each other, so it cannot be streamed as text deltas.
+    private func structuredResponse(from session: LanguageModelSession, schema: GenerationSchema) async throws -> String {
+        let response =
+            if let prompt = conversation.prompt {
+                try await session.respond(to: Prompt(prompt), schema: schema, options: options)
+            } else {
+                try await session.respond(schema: schema, options: options) {}
+            }
+        return response.rawContent.jsonString
     }
 
     private func requestedToolCalls(in session: LanguageModelSession) -> [ToolCall] {
@@ -202,5 +221,29 @@ extension ChatGeneration {
             temperature: request.temperature == 0 ? nil : request.temperature,
             maximumResponseTokens: request.responseTokenLimit,
             toolCallingMode: toolCallingMode)
+    }
+
+    private static func outputSchema(of format: ResponseFormat?) throws(APIError) -> GenerationSchema? {
+        switch format?.type {
+        case nil, "text":
+            return nil
+        case "json_schema":
+            guard let jsonSchema = format?.jsonSchema else {
+                throw APIError.invalidRequest(
+                    "'response_format' of type 'json_schema' needs a 'json_schema' object.",
+                    param: "response_format.json_schema")
+            }
+            do {
+                return try JSONSchemaConverter.generationSchema(
+                    named: jsonSchema.name, description: jsonSchema.description, from: jsonSchema.schema)
+            } catch {
+                throw APIError(error, param: "response_format.json_schema.schema")
+            }
+        default:
+            // `json_object` promises valid JSON without a schema. The framework can
+            // only constrain output to a schema, so the promise could not be kept.
+            throw APIError.unsupported(
+                "Only the response formats 'text' and 'json_schema' are supported.", param: "response_format.type")
+        }
     }
 }
