@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		D761F1942DFF09CE00898C34 /* Vapor in Frameworks */ = {isa = PBXBuildFile; productRef = D761F1932DFF09CE00898C34 /* Vapor */; };
+		D761F1942DFF09CE00898C34 /* OnDeviceServer in Frameworks */ = {isa = PBXBuildFile; productRef = D761F1932DFF09CE00898C34 /* OnDeviceServer */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,7 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D761F1942DFF09CE00898C34 /* Vapor in Frameworks */,
+				D761F1942DFF09CE00898C34 /* OnDeviceServer in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -70,7 +70,7 @@
 			);
 			name = AppleOnDeviceOpenAI;
 			packageProductDependencies = (
-				D761F1932DFF09CE00898C34 /* Vapor */,
+				D761F1932DFF09CE00898C34 /* OnDeviceServer */,
 			);
 			productName = AppleOnDeviceOpenAI;
 			productReference = D761F1842DFF066000898C34 /* AppleOnDeviceOpenAI.app */;
@@ -101,7 +101,7 @@
 			mainGroup = D761F17B2DFF066000898C34;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				D761F1922DFF09CE00898C34 /* XCRemoteSwiftPackageReference "vapor" */,
+				D761F1922DFF09CE00898C34 /* XCLocalSwiftPackageReference "OnDeviceServer" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = D761F1852DFF066000898C34 /* Products */;
@@ -284,7 +284,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = cloud.secondtruth.AppleOnDeviceOpenAI;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -334,7 +334,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = cloud.secondtruth.AppleOnDeviceOpenAI;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -375,22 +375,18 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		D761F1922DFF09CE00898C34 /* XCRemoteSwiftPackageReference "vapor" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/vapor/vapor.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 4.115.0;
-			};
+/* Begin XCLocalSwiftPackageReference section */
+		D761F1922DFF09CE00898C34 /* XCLocalSwiftPackageReference "OnDeviceServer" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = OnDeviceServer;
 		};
-/* End XCRemoteSwiftPackageReference section */
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		D761F1932DFF09CE00898C34 /* Vapor */ = {
+		D761F1932DFF09CE00898C34 /* OnDeviceServer */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = D761F1922DFF09CE00898C34 /* XCRemoteSwiftPackageReference "vapor" */;
-			productName = Vapor;
+			package = D761F1922DFF09CE00898C34 /* XCLocalSwiftPackageReference "OnDeviceServer" */;
+			productName = OnDeviceServer;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -1,17 +1,13 @@
-//
-//  AppleOnDeviceOpenAIApp.swift
-//  AppleOnDeviceOpenAI
-//
-//  Created by Channing Dai on 6/15/25.
-//
-
 import SwiftUI
 
 @main
 struct AppleOnDeviceOpenAIApp: App {
+    @State private var viewModel = ServerViewModel()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(viewModel: viewModel)
+                .task { await viewModel.startIfConfigured() }
         }
     }
 }
