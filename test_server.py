@@ -155,6 +155,110 @@ def test_streaming_chat_completion():
         print(f"❌ Streaming chat completion failed: {e}")
         return False
 
+WEATHER_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "get_weather",
+        "description": "Get the current weather for a city.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "city": {"type": "string", "description": "City name"},
+                "unit": {"type": "string", "enum": ["celsius", "fahrenheit"]},
+            },
+            "required": ["city", "unit"],
+        },
+    },
+}
+
+
+def test_tool_calling_round_trip():
+    """Test a tool call, the client-side execution, and the model's final answer"""
+    print("\n🔍 Testing tool calling round trip (OpenAI SDK)...")
+    try:
+        client = OpenAI(base_url=API_BASE_URL, api_key="dummy-key")
+        messages = [{"role": "user", "content": "What is the weather in Berlin, in celsius?"}]
+
+        first = client.chat.completions.create(
+            model="apple-on-device", messages=messages, tools=[WEATHER_TOOL]
+        )
+        choice = first.choices[0]
+        if choice.finish_reason != "tool_calls" or not choice.message.tool_calls:
+            print(f"❌ Expected a tool call, got finish_reason={choice.finish_reason}")
+            return False
+        for call in choice.message.tool_calls:
+            print(f"✅ Model requested {call.function.name}({call.function.arguments})")
+
+        # The client runs the tool; the server never does.
+        messages.append(choice.message.model_dump(exclude_none=True))
+        for call in choice.message.tool_calls:
+            json.loads(call.function.arguments)  # arguments must be a JSON document
+            messages.append({
+                "role": "tool",
+                "tool_call_id": call.id,
+                "content": json.dumps({"temp_c": 7, "condition": "drizzle"}),
+            })
+
+        second = client.chat.completions.create(
+            model="apple-on-device", messages=messages, tools=[WEATHER_TOOL]
+        )
+        print(f"✅ Final answer: {second.choices[0].message.content}")
+        return second.choices[0].finish_reason == "stop"
+    except Exception as e:
+        print(f"❌ Tool calling failed: {e}")
+        return False
+
+
+def test_structured_output():
+    """Test response_format with a JSON Schema"""
+    print("\n🔍 Testing structured output (response_format)...")
+    try:
+        client = OpenAI(base_url=API_BASE_URL, api_key="dummy-key")
+        response = client.chat.completions.create(
+            model="apple-on-device",
+            messages=[{"role": "user", "content": "Extract: Anna Schmidt, 34, lives in Graz."}],
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "person",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string"},
+                            "age": {"type": "integer"},
+                            "city": {"type": "string"},
+                        },
+                        "required": ["name", "age", "city"],
+                    },
+                },
+            },
+        )
+        person = json.loads(response.choices[0].message.content)
+        print(f"✅ Structured output: {person}")
+        return set(person) == {"name", "age", "city"}
+    except Exception as e:
+        print(f"❌ Structured output failed: {e}")
+        return False
+
+
+def test_error_envelope():
+    """Test that errors arrive in OpenAI's error envelope"""
+    print("\n🔍 Testing error envelope...")
+    try:
+        response = requests.post(
+            f"{API_BASE_URL}/chat/completions",
+            json={"model": "no-such-model", "messages": [{"role": "user", "content": "hi"}]},
+        )
+        error = response.json().get("error", {})
+        if response.status_code == 404 and error.get("code") == "model_not_found":
+            print(f"✅ 404 {error['type']}: {error['message']}")
+            return True
+        print(f"❌ Unexpected error response: {response.status_code} {response.text}")
+        return False
+    except Exception as e:
+        print(f"❌ Error envelope test failed: {e}")
+        return False
+
 
 def main():
     """Main test function"""
@@ -186,7 +290,15 @@ def main():
         print("=" * 60)
         
         test_streaming_chat_completion()
-        
+
+        print("\n" + "=" * 60)
+        print("🛠  Testing tool calling, structured output and errors")
+        print("=" * 60)
+
+        test_tool_calling_round_trip()
+        test_structured_output()
+        test_error_envelope()
+
         print("\n" + "=" * 60)
         print("✅ All tests completed!")
         print("\n💡 You can now use any OpenAI-compatible client to connect to:")
