@@ -34,5 +34,20 @@ struct ChatCompletionChunk: Codable, Sendable {
     struct Delta: Codable, Sendable {
         var role: String?
         var content: String?
+        var toolCalls: [ToolCallDelta]?
+
+        enum CodingKeys: String, CodingKey {
+            case role, content
+            case toolCalls = "tool_calls"
+        }
+    }
+
+    /// A tool call inside a delta. `index` lets clients reassemble calls that
+    /// arrive in fragments; this server sends each call whole.
+    struct ToolCallDelta: Codable, Sendable {
+        var index: Int
+        var id: String
+        var type = "function"
+        var function: ToolCall.Function
     }
 }

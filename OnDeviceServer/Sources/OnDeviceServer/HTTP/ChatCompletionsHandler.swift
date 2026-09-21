@@ -21,6 +21,7 @@ struct ChatCompletionsHandler: Sendable {
         request.logger.info("completion started", metadata: [
             "completion": "\(context.id)", "model": "\(context.model)",
             "stream": "\(body.stream ?? false)", "messages": "\(body.messages.count)",
+            "tools": "\(body.tools?.count ?? 0)",
         ])
 
         return body.stream == true
@@ -42,7 +43,9 @@ struct ChatCompletionsHandler: Sendable {
         }
         context.logFinished(completion)
 
-        let message = AssistantMessage(content: completion.content)
+        let message = AssistantMessage(
+            content: completion.content.isEmpty && !completion.toolCalls.isEmpty ? nil : completion.content,
+            toolCalls: completion.toolCalls.isEmpty ? nil : completion.toolCalls)
         let body = ChatCompletionResponse(
             id: context.id, created: context.created, model: context.model,
             choices: [.init(message: message, finishReason: completion.finishReason)],
@@ -103,6 +106,12 @@ struct ChatCompletionsHandler: Sendable {
             try await writer.send(context.chunk(.init(content: text)))
 
         case .completed(let completion):
+            if !completion.toolCalls.isEmpty {
+                let deltas = completion.toolCalls.enumerated().map { index, call in
+                    ChatCompletionChunk.ToolCallDelta(index: index, id: call.id, function: call.function)
+                }
+                try await writer.send(context.chunk(.init(toolCalls: deltas)))
+            }
             try await writer.send(context.chunk(.init(), finishReason: completion.finishReason))
             if includeUsage {
                 try await writer.send(ChatCompletionChunk(
@@ -136,6 +145,7 @@ private struct CompletionContext: Sendable {
     func logFinished(_ completion: ChatGeneration.Completion) {
         logger.info("completion finished", metadata: [
             "completion": "\(id)", "finish_reason": "\(completion.finishReason.rawValue)",
+            "tool_calls": "\(completion.toolCalls.count)",
             "prompt_tokens": "\(completion.usage.promptTokens)",
             "completion_tokens": "\(completion.usage.completionTokens)",
             "duration_ms": "\(elapsedMilliseconds)",

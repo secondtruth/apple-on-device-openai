@@ -3,11 +3,19 @@ import Foundation
 /// One entry of the request's `messages` array.
 struct ChatMessage: Codable, Sendable {
     enum Role: String, Codable, Sendable {
-        case system, developer, user, assistant
+        case system, developer, user, assistant, tool
     }
 
     var role: Role
     var content: MessageContent?
+    var toolCalls: [ToolCall]?
+    var toolCallID: String?
+
+    enum CodingKeys: String, CodingKey {
+        case role, content
+        case toolCalls = "tool_calls"
+        case toolCallID = "tool_call_id"
+    }
 }
 
 /// Message content is a plain string or an array of typed parts.

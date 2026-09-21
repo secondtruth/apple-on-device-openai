@@ -18,13 +18,18 @@ struct ChatCompletionRequest: Content {
     var stop: StopSequences?
     var stream: Bool?
     var streamOptions: StreamOptions?
+    var tools: [ToolDefinition]?
+    var toolChoice: ToolChoice?
+    var parallelToolCalls: Bool?
 
     enum CodingKeys: String, CodingKey {
-        case model, messages, temperature, seed, n, stop, stream
+        case model, messages, temperature, seed, n, stop, stream, tools
         case maxTokens = "max_tokens"
         case maxCompletionTokens = "max_completion_tokens"
         case topP = "top_p"
         case streamOptions = "stream_options"
+        case toolChoice = "tool_choice"
+        case parallelToolCalls = "parallel_tool_calls"
     }
 
     /// `max_completion_tokens` superseded `max_tokens`; clients send either.

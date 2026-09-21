@@ -9,8 +9,17 @@ import Testing
         return try JSONDecoder().decode(ChatCompletionRequest.self, from: Data(json.utf8))
     }
 
+    private static let tools =
+        #""tools":[{"type":"function","function":{"name":"get_weather","parameters":{"type":"object","properties":{"city":{"type":"string"}},"required":["city"]}}}]"#
+
     @Test func acceptsAPlainRequestAndDefaultsTheModel() throws {
         #expect(try ChatGeneration(request("")).model.id == OnDeviceModel.general.id)
+    }
+
+    @Test func acceptsEveryToolChoiceForm() throws {
+        for choice in [#""auto""#, #""none""#, #""required""#, #"{"type":"function","function":{"name":"get_weather"}}"#] {
+            _ = try ChatGeneration(request(Self.tools + #","tool_choice":"# + choice))
+        }
     }
 
     @Test(arguments: [
@@ -20,6 +29,11 @@ import Testing
         (#""temperature":3"#, "temperature", 400),
         (#""top_p":0"#, "top_p", 400),
         (#""max_tokens":0"#, "max_completion_tokens", 400),
+        (#""tool_choice":"required""#, "tool_choice", 400),
+        (tools + #","tool_choice":{"type":"function","function":{"name":"other"}}"#, "tool_choice", 400),
+        (#""tools":[{"type":"retrieval","function":{"name":"x"}}]"#, "tools[0].type", 400),
+        (#""tools":[{"type":"function","function":{"name":"x","parameters":{"type":"object","properties":{"a":{"not":{}}}}}}]"#,
+            "tools[0].function.parameters", 400),
     ])
     func rejectsWhatTheModelCannotHonour(fields: String, param: String, status: Int) throws {
         let decoded = try request(fields)

@@ -1,6 +1,7 @@
 import Foundation
 
-/// An arbitrary JSON document, for the places where the API carries free-form JSON.
+/// An arbitrary JSON document. Tool parameter schemas and tool-call arguments
+/// are free-form JSON in the OpenAI API, so they cannot be decoded into fixed types.
 enum JSONValue: Sendable, Equatable {
     case null
     case bool(Bool)

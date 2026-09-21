@@ -9,6 +9,14 @@ import Vapor
         try JSONDecoder().decode(JSONValue.self, from: JSONEncoder().encode(value))
     }
 
+    @Test func aMessageWithOnlyToolCallsEncodesContentAsNull() throws {
+        let message = AssistantMessage(
+            content: nil, toolCalls: [ToolCall(id: "call_1", function: .init(name: "f", arguments: "{}"))])
+        let encoded = try json(message)
+        #expect(encoded["content"] == .null)
+        #expect(encoded["tool_calls"]?.arrayValue?.first?["type"] == .string("function"))
+    }
+
     @Test func everyChunkCarriesAFinishReasonKey() throws {
         let chunk = ChatCompletionChunk(
             id: "chatcmpl-1", created: 1, model: "m", choices: [.init(delta: .init(content: "Hi"))])

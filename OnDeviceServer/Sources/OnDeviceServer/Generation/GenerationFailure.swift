@@ -17,6 +17,8 @@ extension APIError {
             // The model passed the availability check, then lost its assets: macOS
             // evicts and re-downloads them on its own schedule.
             self = .modelUnavailable(ModelAvailability(.unavailable(.modelNotReady)))
+        case let error as LanguageModelSession.ToolCallError:
+            self = .internalError("Tool call failed: \(error.underlyingError)")
         case is CancellationError:
             return nil
         default:

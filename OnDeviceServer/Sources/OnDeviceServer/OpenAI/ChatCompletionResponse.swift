@@ -23,12 +23,28 @@ struct ChatCompletionResponse: Content {
 
 struct AssistantMessage: Codable, Sendable {
     var role = "assistant"
-    var content: String
+    var content: String?
+    var toolCalls: [ToolCall]?
+
+    enum CodingKeys: String, CodingKey {
+        case role, content
+        case toolCalls = "tool_calls"
+    }
+
+    // `content` is encoded as an explicit null: clients distinguish a message
+    // that carries only tool calls by `"content": null`, not by a missing key.
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(role, forKey: .role)
+        try container.encode(content, forKey: .content)
+        try container.encodeIfPresent(toolCalls, forKey: .toolCalls)
+    }
 }
 
 enum FinishReason: String, Codable, Sendable {
     case stop
     case length
+    case toolCalls = "tool_calls"
 }
 
 struct TokenUsage: Codable, Sendable, Equatable {
